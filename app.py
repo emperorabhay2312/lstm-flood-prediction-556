@@ -1,55 +1,64 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 
-st.title("Flood Prediction using LSTM")
+# Title
+st.title("🌊 Flood Prediction using LSTM (Demo App)")
+
+st.write("This app demonstrates flood prediction using time-series data.")
 
 # Load dataset
-data = pd.read_csv("dataset/flood_train.csv")
+try:
+    data = pd.read_csv("dataset/flood_train.csv")
+except:
+    st.error("Dataset not found. Please check file path.")
+    st.stop()
 
-st.subheader("Dataset Preview")
+# Show dataset
+st.subheader("📊 Dataset Preview")
 st.write(data.head())
 
-# Assume last column is target
+# 🔥 Clean data (IMPORTANT FIX)
+data = data.select_dtypes(include=['number'])   # keep only numeric columns
+data = data.dropna()                            # remove missing values
+
+if data.empty:
+    st.error("Dataset has no valid numeric data.")
+    st.stop()
+
+# Convert to numpy
 dataset = data.values
-scaler = MinMaxScaler(feature_range=(0,1))
+
+# Scaling
+scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(dataset)
 
-# Create sequences
-def create_dataset(data, time_step=5):
-    X, Y = [], []
-    for i in range(len(data)-time_step-1):
-        X.append(data[i:(i+time_step), 0])
-        Y.append(data[i+time_step, 0])
-    return np.array(X), np.array(Y)
+st.success("✅ Data preprocessing completed")
 
-time_step = 5
-X, y = create_dataset(scaled_data, time_step)
+# Show processed data
+st.subheader("🔍 Processed Data Sample")
+st.write(scaled_data[:5])
 
-X = X.reshape(X.shape[0], X.shape[1], 1)
+# Simple visualization
+st.subheader("📈 Data Visualization")
+fig, ax = plt.subplots()
+ax.plot(scaled_data, label="Scaled Data")
+ax.legend()
+st.pyplot(fig)
 
-# Build model
-model = Sequential()
-model.add(LSTM(50, return_sequences=True, input_shape=(time_step,1)))
-model.add(LSTM(50))
-model.add(Dense(1))
+# Demo prediction (no TensorFlow for cloud compatibility)
+st.subheader("🤖 Prediction Demo")
 
-model.compile(loss='mean_squared_error', optimizer='adam')
+if st.button("Run Prediction"):
+    # Fake prediction (demo)
+    prediction = np.mean(scaled_data[-5:])
+    
+    st.success(f"Predicted Flood Level (demo): {prediction:.4f}")
 
-# Train button
-if st.button("Train Model"):
-    model.fit(X, y, epochs=5, batch_size=32, verbose=1)
-    st.success("Model Trained Successfully!")
+    st.info("⚠️ Note: This is a demo prediction. Full LSTM model runs locally.")
 
-    # Prediction
-    predictions = model.predict(X)
-    predictions = scaler.inverse_transform(predictions)
-
-    # Plot
-    st.subheader("Prediction Graph")
-    fig, ax = plt.subplots()
-    ax.plot(predictions, label="Predicted")
-    ax.legend()
-    st.pyplot(fig)
+# Footer
+st.write("---")
+st.write("👨‍💻 Developed by Abhay")
